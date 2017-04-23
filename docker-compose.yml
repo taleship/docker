@@ -3,9 +3,11 @@ version: "2"
 services:
   web:
     build: .
+
+    restart: always
     
     ports:
-      - "8000:8000"
+      - "80:80"
 
     volumes:
       - /opt/app/taleship/
@@ -19,19 +21,23 @@ services:
       - redis
       - migrator
 
-    command: daphne -b 0.0.0.0 -p 8000 taleship.asgi:channel_layer
+    command: daphne -b 0.0.0.0 -p 80 taleship.asgi:channel_layer
 
     environment:
-      - DEBUG=True
+      - DEBUG
+      - SECRET_KEY
+      - ALLOWED_HOSTS
+      - SENDGRID_API_KEY
       - DJANGO_SETTINGS_MODULE=taleship.settings.docker
       - DATABASE_URL=postgres://postgres@db:5432/postgres
       - REDIS_URL=redis://redis:6379/1
   db:
+    restart: always
     image: postgres:latest
 
   worker:
     build: .
-
+    restart: always
     environment:
       - DJANGO_SETTINGS_MODULE=taleship.settings.docker
       - DATABASE_URL=postgres://postgres@db:5432/postgres
@@ -48,6 +54,7 @@ services:
     command: bash -c "exec python3 /opt/app/taleship/manage.py runworker -v3"
 
   redis:
+    restart: always
     image: redis
 
   migrator:
