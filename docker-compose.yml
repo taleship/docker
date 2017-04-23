@@ -1,0 +1,67 @@
+version: "2"
+
+services:
+  web:
+    build: .
+    
+    ports:
+      - "8000:8000"
+
+    volumes:
+      - /opt/app/taleship/
+
+    links:
+      - db
+      - redis
+
+    depends_on:
+      - db
+      - redis
+      - migrator
+
+    command: daphne -b 0.0.0.0 -p 8000 taleship.asgi:channel_layer
+
+    environment:
+      - DEBUG=True
+      - DJANGO_SETTINGS_MODULE=taleship.settings.docker
+      - DATABASE_URL=postgres://postgres@db:5432/postgres
+      - REDIS_URL=redis://redis:6379/1
+  db:
+    image: postgres:latest
+
+  worker:
+    build: .
+
+    environment:
+      - DJANGO_SETTINGS_MODULE=taleship.settings.docker
+      - DATABASE_URL=postgres://postgres@db:5432/postgres
+      - REDIS_URL=redis://redis:6379/1
+
+    depends_on:
+      - db
+      - redis
+
+    links:
+      - db
+      - redis
+
+    command: bash -c "exec python3 /opt/app/taleship/manage.py runworker -v3"
+
+  redis:
+    image: redis
+
+  migrator:
+    build: .
+
+    depends_on:
+      - db
+
+    links:
+      - db
+
+    environment:
+      - DJANGO_SETTINGS_MODULE=taleship.settings.docker
+      - DATABASE_URL=postgres://postgres@db:5432/postgres
+      - REDIS_URL=redis://redis:6379/1
+
+    command: bash -c "exec python3 /opt/app/taleship/manage.py migrate"
