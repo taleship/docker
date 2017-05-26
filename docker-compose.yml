@@ -1,4 +1,4 @@
-version: "2"
+version: "3"
 
 services:
   web:
@@ -21,7 +21,7 @@ services:
       - redis
       - migrator
 
-    command: daphne -b 0.0.0.0 -p 80 taleship.asgi:channel_layer
+    command: dockerize -wait tcp://db:5432 -wait tcp://redis:6379 daphne -b 0.0.0.0 -p 80 taleship.asgi:channel_layer
 
     environment:
       - DEBUG
@@ -51,7 +51,7 @@ services:
       - db
       - redis
 
-    command: bash -c "exec python3 /opt/app/taleship/manage.py runworker -v3"
+    command: dockerize -wait tcp://db:5432 -wait tcp://redis:6379 python3 /opt/app/taleship/manage.py runworker -v3
 
   redis:
     restart: always
@@ -71,4 +71,4 @@ services:
       - DATABASE_URL=postgres://postgres@db:5432/postgres
       - REDIS_URL=redis://redis:6379/1
 
-    command: bash -c "exec python3 /opt/app/taleship/manage.py migrate"
+    command: dockerize -wait tcp://db:5432 -wait tcp://redis:6379 python3 /opt/app/taleship/manage.py migrate
